@@ -8,6 +8,9 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
 
 
+SUPPORTED_MODELS = {"Logistic Regression", "Random Forest", "XGBoost", "LSTM"}
+
+
 def evaluate_predictions(y_true, y_pred, labels: list[str]) -> dict:
     precision, recall, f1, _ = precision_recall_fscore_support(
         y_true,
@@ -43,5 +46,6 @@ def save_model(model, path: str | Path) -> None:
 def load_results(path: str | Path = "reports/model_results.csv") -> pd.DataFrame:
     result_path = Path(path)
     if result_path.exists():
-        return pd.read_csv(result_path)
+        results = pd.read_csv(result_path)
+        return results[results["Model"].isin(SUPPORTED_MODELS)]
     return pd.DataFrame(columns=["Model", "Accuracy", "Precision", "Recall", "F1", "Training Time"])

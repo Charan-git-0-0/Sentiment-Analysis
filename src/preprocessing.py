@@ -14,6 +14,7 @@ LABEL_COLUMN = "airline_sentiment"
 AIRLINE_COLUMN = "airline"
 NEGATIVE_REASON_COLUMN = "negativereason"
 BINARY_LABELS = ["negative", "positive"]
+KAGGLE_DATASET_HANDLE = "crowdflower/twitter-airline-sentiment"
 
 STOPWORDS = {
     "a",
@@ -62,13 +63,29 @@ STOPWORDS = {
 }
 
 
-def load_airline_sentiment(path: str | Path) -> pd.DataFrame:
-    """Load and normalize the Twitter US Airline Sentiment dataset."""
+def find_or_download_dataset(path: str | Path = "data/Tweets.csv") -> Path:
+    """Use a local CSV when present, otherwise download the Kaggle dataset."""
     data_path = Path(path)
-    if not data_path.exists():
+    if data_path.exists():
+        return data_path
+
+    try:
+        import kagglehub
+    except ImportError as exc:
         raise FileNotFoundError(
-            f"Dataset not found at {data_path}. Download Tweets.csv and place it in data/."
-        )
+            f"Dataset not found at {data_path}. Add Tweets.csv there or install kagglehub."
+        ) from exc
+
+    download_dir = Path(kagglehub.dataset_download(KAGGLE_DATASET_HANDLE))
+    matches = list(download_dir.rglob("Tweets.csv"))
+    if not matches:
+        raise FileNotFoundError(f"Tweets.csv was not found inside the Kaggle download: {download_dir}")
+    return matches[0]
+
+
+def load_airline_sentiment(path: str | Path = "data/Tweets.csv") -> pd.DataFrame:
+    """Load and normalize the Twitter US Airline Sentiment dataset."""
+    data_path = find_or_download_dataset(path)
 
     df = pd.read_csv(data_path)
     required = {TEXT_COLUMN, LABEL_COLUMN, AIRLINE_COLUMN}
@@ -127,6 +144,22 @@ def add_text_features(df: pd.DataFrame) -> pd.DataFrame:
 def binary_sentiment_rows(df: pd.DataFrame) -> pd.DataFrame:
     """Keep only positive and negative examples for binary classification."""
     return df[df[LABEL_COLUMN].isin(BINARY_LABELS)].copy()
+
+
+def balanced_binary_sentiment_rows(
+    df: pd.DataFrame,
+    random_state: int = RANDOM_STATE,
+) -> pd.DataFrame:
+    """Return equal positive and negative samples using reproducible undersampling."""
+    binary = binary_sentiment_rows(df)
+    class_size = int(binary[LABEL_COLUMN].value_counts().min())
+    balanced = (
+        binary.groupby(LABEL_COLUMN, group_keys=False)
+        .sample(n=class_size, random_state=random_state)
+        .sample(frac=1, random_state=random_state)
+        .reset_index(drop=True)
+    )
+    return balanced
 
 
 def tokenize_texts(texts: Iterable[str]) -> list[list[str]]:

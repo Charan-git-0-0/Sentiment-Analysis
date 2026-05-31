@@ -1,63 +1,48 @@
 # Airline Twitter Sentiment Analytics Dashboard
 
-An end-to-end NLP and analytics project that classifies airline tweets as positive or negative, explains customer feedback patterns, compares traditional machine learning with deep learning, and presents the results in an interactive Streamlit dashboard.
+An end-to-end NLP project that classifies airline tweets as positive or negative, compares traditional machine learning with an LSTM, and presents customer-feedback insights in a Streamlit dashboard.
 
-The project uses the Twitter US Airline Sentiment dataset, not the 1.6M-row Sentiment140 dataset. It is designed to train locally on a laptop and to report only metrics produced by your own run.
+The project uses the Twitter US Airline Sentiment dataset. It is designed to run on a laptop or in Google Colab and reports only metrics produced by your own training runs.
 
-## Problem Statement
+## What the Project Does
 
-Airlines receive a constant stream of public customer feedback. Sentiment analysis helps teams identify unhappy customers, compare airline-level service perception, and understand recurring negative reasons such as delays, customer service issues, and lost luggage.
+```text
+Kaggle dataset
+-> Load and clean tweets
+-> Remove neutral rows for model training
+-> Balance positive and negative examples
+-> Create an 80/20 stratified train-test split
+-> Train and evaluate models
+-> Save metrics and model files
+-> Display results in Streamlit
+```
+
+The dashboard can still analyze all tweets, including neutral rows.
 
 ## Dataset
 
-Use the Twitter US Airline Sentiment dataset and place the CSV at:
+The project first looks for:
 
 ```text
 data/Tweets.csv
 ```
 
-Expected columns include:
+If the file is missing, the loader uses `kagglehub` to download:
 
-- `text`
-- `airline_sentiment`
-- `airline`
-- `negativereason`
-
-This dataset has about 14,640 tweets, airline names, sentiment labels, and negative-reason categories, making it more realistic for local training and business analytics than very large generic tweet datasets. The dashboard can inspect every row, while model training filters out `neutral` rows and uses only `positive` and `negative` tweets.
-
-## Architecture
-
-```mermaid
-flowchart LR
-    A["Tweets.csv"] --> B["EDA and data quality checks"]
-    B --> C["Text preprocessing"]
-    C --> D["TF-IDF unigrams + bigrams"]
-    D --> E["Logistic Regression"]
-    D --> F["Random Forest"]
-    D --> G["XGBoost"]
-    C --> H["Tokenizer + padded sequences"]
-    H --> I["Embedding + LSTM"]
-    I --> J["Feature layer extraction"]
-    J --> K["SVM"]
-    E --> L["Model comparison"]
-    F --> L
-    G --> L
-    I --> L
-    K --> L
-    B --> M["Streamlit analytics dashboard"]
-    L --> N["Streamlit performance dashboard"]
-    E --> O["Live prediction dashboard"]
+```text
+crowdflower/twitter-airline-sentiment
 ```
 
-## Tech Stack
+Training keeps all positive tweets and reproducibly samples the same number of negative tweets. This gives both classes equal weight without changing the original analytics dataset.
 
-- Python
-- Pandas and NumPy
-- Scikit-learn
-- XGBoost
-- TensorFlow/Keras
-- Streamlit
-- Matplotlib, Plotly, and WordCloud
+## Models
+
+| Model | Features | Purpose |
+| --- | --- | --- |
+| Logistic Regression | TF-IDF unigrams and bigrams | Fast, strong baseline |
+| Random Forest | TF-IDF unigrams and bigrams | Bagging-based tree comparison |
+| XGBoost | TF-IDF unigrams and bigrams | Boosting comparison |
+| LSTM | Learned embedding and word sequence | Deep-learning comparison |
 
 ## Project Structure
 
@@ -73,11 +58,6 @@ project/
 |   |-- evaluation.py
 |   |-- visualization.py
 |   `-- prediction.py
-|-- train_logistic_regression.py
-|-- train_random_forest.py
-|-- train_xgboost.py
-|-- train_lstm.py
-|-- train_lstm_svm.py
 |-- saved_models/
 |-- reports/
 |-- screenshots/
@@ -86,112 +66,107 @@ project/
 `-- .gitignore
 ```
 
-## Setup
+## Local Setup
 
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
+Create and activate a virtual environment:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
-
-Add the dataset:
-
-```text
-data/Tweets.csv
-```
-
-## Google Colab Workflow
-
-Upload the project folder to Google Drive or clone the repository in Colab. Then upload the Kaggle CSV as `data/Tweets.csv`.
 
 Install dependencies:
 
-```bash
-!pip install -r requirements.txt
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+## Train Models
+
+Train the three traditional ML models:
+
+```powershell
+python -m src.training --model traditional
 ```
 
 Train one model at a time:
 
-```bash
-!python train_logistic_regression.py
-!python train_random_forest.py
-!python train_xgboost.py
-!python train_lstm.py
-!python train_lstm_svm.py
+```powershell
+python -m src.training --model logistic
+python -m src.training --model random-forest
+python -m src.training --model xgboost
+python -m src.training --model lstm
 ```
 
-The final command uses the saved LSTM model to extract dense features and trains an SVM on those features.
+Train every model:
 
-Train traditional machine learning models:
-
-```bash
-python -m src.training
+```powershell
+python -m src.training --model all
 ```
 
-Train LSTM and optional LSTM + SVM experiments:
+## Google Colab
 
-```bash
-python -m src.training --mode lstm
-python -m src.training --mode hybrid
+Upload the project folder or clone its Git repository, then run:
+
+```python
+!pip install -r requirements.txt
+!python -m src.training --model all
 ```
 
-Run the dashboard:
+KaggleHub downloads the dataset automatically if `data/Tweets.csv` is absent.
 
-```bash
-streamlit run app.py
+## Dashboard
+
+Start Streamlit:
+
+```powershell
+python -m streamlit run app.py
 ```
 
-## Modeling Approach
+Open the local URL printed by Streamlit, usually:
 
-Text preprocessing includes lowercasing, URL removal, mention removal, hashtag cleanup, punctuation removal, stopword removal, and whitespace normalization.
+```text
+http://localhost:8501
+```
 
-Traditional models use TF-IDF with unigrams and bigrams:
+The dashboard provides:
 
-- Logistic Regression as the strong baseline.
-- Random Forest to compare bagging-based ensemble learning.
-- XGBoost to compare boosting against Random Forest.
+- Dataset analytics
+- Sentiment and airline comparisons
+- Negative-reason analysis
+- Word clouds and frequent words
+- Model metric comparisons
+- Confusion matrices
+- Live predictions using saved traditional ML models or the trained LSTM
 
-Deep learning uses:
+## Saved Results
 
-- Tokenizer
-- Sequence conversion
-- Padding
-- Embedding layer
-- LSTM
-- Dense prediction layer
+Training updates:
 
-The optional hybrid experiment trains an LSTM, extracts vectors from the penultimate dense feature layer, then trains an SVM on those learned representations. This is treated as an experiment, not assumed to be better.
+```text
+reports/model_results.csv
+```
 
-## Results
+Each model also writes its own detailed JSON metrics:
 
-Run the training commands to generate real metrics in `reports/model_results.csv`.
+```text
+reports/logistic_regression_metrics.json
+reports/random_forest_metrics.json
+reports/xgboost_metrics.json
+reports/lstm_metrics.json
+```
 
-| Model | Accuracy | Precision | Recall | F1 | Training Time |
-| --- | --- | --- | --- | --- | --- |
-| Logistic Regression | generated after training | generated after training | generated after training | generated after training | generated after training |
-| Random Forest | generated after training | generated after training | generated after training | generated after training | generated after training |
-| XGBoost | generated after training | generated after training | generated after training | generated after training | generated after training |
-| LSTM | generated after training | generated after training | generated after training | generated after training | generated after training |
-| LSTM + SVM | generated after training | generated after training | generated after training | generated after training | generated after training |
+Saved model files are written to:
 
-## Dashboard Pages
+```text
+saved_models/
+```
 
-The Analytics Dashboard shows dataset statistics, missing values, sentiment distribution, airline sentiment comparison, negative reason analysis, tweet length distribution, frequent words, word clouds, and heatmaps.
+These files are binary artifacts loaded by Python and are not intended to be opened in a text editor.
 
-The Model Performance Dashboard shows metric comparisons and confusion matrices from the generated reports.
+## Notes
 
-The Live Prediction Dashboard accepts a custom tweet and returns the predicted sentiment, confidence score, and model used.
-
-## What I Learned
-
-- NLP preprocessing choices affect both interpretability and model performance.
-- TF-IDF is a strong baseline because short tweets often contain sentiment-bearing keywords and phrases.
-- Boosting can improve performance by combining many weak learners, though it may cost more training time.
-- LSTM models use sequence order, which can help capture context that bag-of-words models ignore.
-- Deep learning does not automatically outperform traditional ML on small datasets; results must be measured.
-- LSTM + SVM is useful for understanding feature extraction and hybrid architectures, but its value depends on actual metrics.
-- Business analytics can make a sentiment project more useful than a standalone classifier.
-
-## Screenshots
-
-Add screenshots to `screenshots/` after running the Streamlit app locally.
+- TF-IDF often performs very well for short tweets because keywords and short phrases carry strong sentiment signals.
+- The LSTM uses `mask_zero=True`, so padding added to short tweets is ignored.
+- A more complex model is not assumed to be better. Compare the actual metrics and training times.

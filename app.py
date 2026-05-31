@@ -8,7 +8,7 @@ import plotly.express as px
 import streamlit as st
 
 from src.evaluation import load_json, load_results
-from src.prediction import predict_sentiment
+from src.prediction import available_model_paths, predict_sentiment
 from src.preprocessing import add_text_features, load_airline_sentiment
 from src.visualization import (
     airline_sentiment_distribution,
@@ -39,10 +39,10 @@ def load_data() -> pd.DataFrame:
 
 
 def render_missing_data_message() -> None:
-    st.warning("Add the Twitter US Airline Sentiment dataset as `data/Tweets.csv` to use the dashboard.")
+    st.warning("The airline sentiment dataset could not be loaded.")
     st.markdown(
-        "Expected columns include `text`, `airline_sentiment`, `airline`, and `negativereason`. "
-        "After adding the CSV, run `python -m src.training` to create the first saved models."
+        "Add `data/Tweets.csv` or install the compatible KaggleHub dependency from `requirements.txt`. "
+        "Expected columns include `text`, `airline_sentiment`, `airline`, and `negativereason`."
     )
 
 
@@ -106,7 +106,16 @@ def model_performance_dashboard() -> None:
     st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Confusion Matrices")
-    metric_files = sorted(Path("reports").glob("*_metrics.json"))
+    metric_files = [
+        Path("reports") / name
+        for name in [
+            "logistic_regression_metrics.json",
+            "random_forest_metrics.json",
+            "xgboost_metrics.json",
+            "lstm_metrics.json",
+        ]
+        if (Path("reports") / name).exists()
+    ]
     if not metric_files:
         st.caption("Confusion matrices will appear after model training.")
         return
@@ -128,18 +137,7 @@ def model_performance_dashboard() -> None:
 
 def live_prediction_dashboard() -> None:
     st.subheader("Live Sentiment Prediction")
-    model_files = sorted(Path("saved_models").glob("*.joblib"))
-    model_files = [
-        path
-        for path in model_files
-        if path.name
-        not in {
-            "label_encoder.joblib",
-            "lstm_tokenizer.joblib",
-            "lstm_config.joblib",
-            "lstm_svm.joblib",
-        }
-    ]
+    model_files = available_model_paths()
     if not model_files:
         st.info("Train a traditional ML model first with `python -m src.training`.")
         return
@@ -147,7 +145,7 @@ def live_prediction_dashboard() -> None:
     selected_model = st.selectbox(
         "Model",
         model_files,
-        format_func=lambda p: p.stem.replace("_", " ").title(),
+        format_func=lambda p: p.stem.replace("_model", "").replace("_", " ").title(),
     )
     tweet = st.text_area(
         "Tweet",
@@ -172,9 +170,9 @@ page = st.sidebar.radio(
 )
 
 if page == "Analytics Dashboard":
-    if DATA_PATH.exists():
+    try:
         analytics_dashboard(load_data())
-    else:
+    except (FileNotFoundError, ImportError, ValueError):
         render_missing_data_message()
 elif page == "Model Performance Dashboard":
     model_performance_dashboard()
