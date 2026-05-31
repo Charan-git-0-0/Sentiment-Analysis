@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.DS_Store
+
+data/*.csv
+saved_models/*
+reports/*.json
+reports/*.csv
+screenshots/*
+
+!data/.gitkeep
+!saved_models/.gitkeep
+!reports/.gitkeep
+!screenshots/.gitkeep
