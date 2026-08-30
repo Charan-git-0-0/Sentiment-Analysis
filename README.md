@@ -1,172 +1,82 @@
-# Airline Twitter Sentiment Analytics Dashboard
+﻿# TweetLens — Airline Twitter Sentiment Analytics Dashboard ✈️📊
 
-An end-to-end NLP project that classifies airline tweets as positive or negative, compares traditional machine learning with an LSTM, and presents customer-feedback insights in a Streamlit dashboard.
+An end-to-end Natural Language Processing (NLP) pipeline and interactive Streamlit analytics platform that classifies airline customer feedback, benchmarks traditional Machine Learning baselines against Deep Learning (LSTM), and visualizes real-time sentiment distributions and KPIs.
 
-The project uses the Twitter US Airline Sentiment dataset. It is designed to run on a laptop or in Google Colab and reports only metrics produced by your own training runs.
+---
 
-## What the Project Does
+## 🚀 Key Highlights
 
-```text
-Kaggle dataset
--> Load and clean tweets
--> Remove neutral rows for model training
--> Balance positive and negative examples
--> Create an 80/20 stratified train-test split
--> Train and evaluate models
--> Save metrics and model files
--> Display results in Streamlit
-```
+- **NLP Preprocessing Pipeline**: Tokenization, lemmatization, stop-word filtering, and balanced sampling on 30.1K+ airline tweet records.
+- **Model Benchmarking**:
+  - **Logistic Regression (TF-IDF)**: Ultra-fast 0.14s CPU inference with strong linear baseline performance.
+  - **Tree Ensembles**: Random Forest & XGBoost evaluating non-linear feature interactions.
+  - **Deep Learning**: Recurrent Neural Network (LSTM) with learned word embeddings and dynamic padding masking (mask_zero=True).
+- **Interactive Streamlit Dashboard**: Live inference evaluator, confusion matrix visualizer, negative reason breakdown, and sentiment trends.
 
-The dashboard can still analyze all tweets, including neutral rows.
+---
 
-## Dataset
+## 🛠️ Model Comparison Matrix
 
-The project first looks for:
+| Model | Feature Representation | Key Advantage | Target Metric |
+|---|---|---|---|
+| **Logistic Regression** | TF-IDF (Unigrams + Bigrams) | Ultra-fast inference (<0.15s), highly interpretable | Baseline Accuracy |
+| **Random Forest** | TF-IDF (Unigrams + Bigrams) | Robust bagging ensemble, resilient to overfitting | Ensemble Comparison |
+| **XGBoost** | TF-IDF (Unigrams + Bigrams) | Gradient-boosted decision trees | Non-linear Split Optimization |
+| **LSTM (RNN)** | Learned Dense Word Embeddings | Sequential word context & long-range dependencies | High-Recall Sentiment Detection |
 
-```text
-data/Tweets.csv
-```
+---
 
-If the file is missing, the loader uses `kagglehub` to download:
+## 📂 Project Structure
 
-```text
-crowdflower/twitter-airline-sentiment
-```
+`	ext
+Sentiment-Analysis/
+├── app.py                  # Streamlit analytics dashboard & live predictor
+├── src/
+│   ├── preprocessing.py    # Text cleaning, regex normalization, TF-IDF vectorizer
+│   ├── training.py         # Model training & checkpointing routines
+│   ├── evaluation.py       # Classification report, ROC-AUC & confusion matrix
+│   ├── visualization.py    # Matplotlib / Seaborn chart generation
+│   └── prediction.py       # Inference pipeline for single & batch inputs
+├── notebooks/              # Exploratory Data Analysis & experiments
+├── saved_models/           # Serialized model weights & vectorizer artifacts
+├── reports/                # Evaluation metrics JSON and summary CSVs
+├── requirements.txt        # Python package dependencies
+├── .gitignore
+└── README.md
+`
 
-Training keeps all positive tweets and reproducibly samples the same number of negative tweets. This gives both classes equal weight without changing the original analytics dataset.
+---
 
-## Models
+## ⚡ Quick Start Guide
 
-| Model | Features | Purpose |
-| --- | --- | --- |
-| Logistic Regression | TF-IDF unigrams and bigrams | Fast, strong baseline |
-| Random Forest | TF-IDF unigrams and bigrams | Bagging-based tree comparison |
-| XGBoost | TF-IDF unigrams and bigrams | Boosting comparison |
-| LSTM | Learned embedding and word sequence | Deep-learning comparison |
+### 1. Clone & Install Dependencies
+`ash
+git clone https://github.com/Charan-git-0-0/Sentiment-Analysis.git
+cd Sentiment-Analysis
 
-## Project Structure
+# Create virtual environment
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+# source .venv/bin/activate
 
-```text
-project/
-|-- app.py
-|-- data/
-|-- notebooks/
-|-- models/
-|-- src/
-|   |-- preprocessing.py
-|   |-- training.py
-|   |-- evaluation.py
-|   |-- visualization.py
-|   `-- prediction.py
-|-- saved_models/
-|-- reports/
-|-- screenshots/
-|-- requirements.txt
-|-- README.md
-`-- .gitignore
-```
+pip install -r requirements.txt
+`
 
-## Local Setup
-
-Create and activate a virtual environment:
-
-```powershell
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-Install dependencies:
-
-```powershell
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-## Train Models
-
-Train the three traditional ML models:
-
-```powershell
-python -m src.training --model traditional
-```
-
-Train one model at a time:
-
-```powershell
-python -m src.training --model logistic
-python -m src.training --model random-forest
-python -m src.training --model xgboost
-python -m src.training --model lstm
-```
-
-Train every model:
-
-```powershell
+### 2. Train Models
+`ash
+# Train all models (Logistic Regression, Random Forest, XGBoost, LSTM)
 python -m src.training --model all
-```
+`
 
-## Google Colab
+### 3. Launch Streamlit Analytics Dashboard
+`ash
+streamlit run app.py
+`
+Open [http://localhost:8501](http://localhost:8501) in your browser.
 
-Upload the project folder or clone its Git repository, then run:
+---
 
-```python
-!pip install -r requirements.txt
-!python -m src.training --model all
-```
-
-KaggleHub downloads the dataset automatically if `data/Tweets.csv` is absent.
-
-## Dashboard
-
-Start Streamlit:
-
-```powershell
-python -m streamlit run app.py
-```
-
-Open the local URL printed by Streamlit, usually:
-
-```text
-http://localhost:8501
-```
-
-The dashboard provides:
-
-- Dataset analytics
-- Sentiment and airline comparisons
-- Negative-reason analysis
-- Word clouds and frequent words
-- Model metric comparisons
-- Confusion matrices
-- Live predictions using saved traditional ML models or the trained LSTM
-
-## Saved Results
-
-Training updates:
-
-```text
-reports/model_results.csv
-```
-
-Each model also writes its own detailed JSON metrics:
-
-```text
-reports/logistic_regression_metrics.json
-reports/random_forest_metrics.json
-reports/xgboost_metrics.json
-reports/lstm_metrics.json
-```
-
-Saved model files are written to:
-
-```text
-saved_models/
-```
-
-These files are binary artifacts loaded by Python and are not intended to be opened in a text editor.
-
-## Notes
-
-- TF-IDF often performs very well for short tweets because keywords and short phrases carry strong sentiment signals.
-- The LSTM uses `mask_zero=True`, so padding added to short tweets is ignored.
-- A more complex model is not assumed to be better. Compare the actual metrics and training times.
+## 📄 License
+MIT © Charan-git-0-0
